@@ -40,7 +40,7 @@ func (value SortBinanceHedge) Less(i, j int) bool {
 }
 func (value SortBinanceHedge) Swap(i, j int) { value[i], value[j] = value[j], value[i] }
 
-func extracePremiumIndex(premium []BinancePremium, currency string) (value *BinancePremium) {
+func extractPremiumIndex(premium []BinancePremium, currency string) (value *BinancePremium) {
 	for _, index := range premium {
 		if strings.HasSuffix(index.Symbol, currency) {
 			value = &index
@@ -93,8 +93,8 @@ func main() {
 		result := make([]BinanceHedge, 0)
 		for i, v := range mapping {
 			if len(v) == 2 {
-				indexUSDT := extracePremiumIndex(v, "USDT")
-				indexBUSD := extracePremiumIndex(v, "BUSD")
+				indexUSDT := extractPremiumIndex(v, "USDT")
+				indexBUSD := extractPremiumIndex(v, "BUSD")
 				rateUSDT, _ := decimal.NewFromString(indexUSDT.LastFundingRate)
 				rateBUSD, _ := decimal.NewFromString(indexBUSD.LastFundingRate)
 				markPriceUSDT, _ := decimal.NewFromString(indexUSDT.MarkPrice)
