@@ -8,31 +8,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/CapsLock-Studio/binance-premium-index/models"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 )
 
-type BinancePremium struct {
-	Symbol               string `json:"symbol"`
-	MarkPrice            string `json:"markPrice"`
-	IndexPrice           string `json:"indexPrice"`
-	EstimatedSettlePrice string `json:"estimatedSettlePrice"`
-	LastFundingRate      string `json:"lastFundingRate"`
-	InterestRate         string `json:"interestRate"`
-	NextFundingTime      int    `json:"nextFundingTime"`
-	Time                 int    `json:"time"`
-}
-
-type BinanceHedge struct {
-	Symbol         string           `json:"symbol"`
-	FundingRateGap float64          `json:"fundingRateGap"`
-	MarkPriceGap   float64          `json:"markPriceGap"`
-	ProfitForTimes int64            `json:"profitForTimes"`
-	Direction      bool             `json:"direction"`
-	Index          []BinancePremium `json:"index"`
-}
-
-type SortBinanceHedge []BinanceHedge
+type SortBinanceHedge []models.BinanceHedge
 
 func (value SortBinanceHedge) Len() int { return len(value) }
 func (value SortBinanceHedge) Less(i, j int) bool {
@@ -40,7 +21,7 @@ func (value SortBinanceHedge) Less(i, j int) bool {
 }
 func (value SortBinanceHedge) Swap(i, j int) { value[i], value[j] = value[j], value[i] }
 
-func extractPremiumIndex(premium []BinancePremium, currency string) (value *BinancePremium) {
+func extractPremiumIndex(premium []models.BinancePremium, currency string) (value *models.BinancePremium) {
 	for _, index := range premium {
 		if strings.HasSuffix(index.Symbol, currency) {
 			value = &index
@@ -61,7 +42,7 @@ func main() {
 		}
 		defer res.Body.Close()
 
-		target := make([]BinancePremium, 0)
+		target := make([]models.BinancePremium, 0)
 		decoder := json.NewDecoder(res.Body)
 		decoder.Decode(&target)
 
@@ -71,7 +52,7 @@ func main() {
 		}
 
 		// mapping
-		mapping := make(map[string][]BinancePremium)
+		mapping := make(map[string][]models.BinancePremium)
 		for _, v := range target {
 
 			re := regexp.MustCompile("(" + strings.Join(currencies, "|") + ")$")
@@ -83,14 +64,14 @@ func main() {
 			index := re.ReplaceAllString(v.Symbol, "")
 
 			if mapping[index] == nil {
-				mapping[index] = make([]BinancePremium, 0)
+				mapping[index] = make([]models.BinancePremium, 0)
 			}
 
 			mapping[index] = append(mapping[index], v)
 		}
 
 		// aggregate mapping
-		result := make([]BinanceHedge, 0)
+		result := make([]models.BinanceHedge, 0)
 		for i, v := range mapping {
 			if len(v) == 2 {
 				indexUSDT := extractPremiumIndex(v, "USDT")
@@ -114,7 +95,7 @@ func main() {
 					Abs().
 					Float64()
 
-				hedge := BinanceHedge{
+				hedge := models.BinanceHedge{
 					Symbol:         i,
 					FundingRateGap: fundinRateGap,
 					MarkPriceGap:   markPriceGap,
