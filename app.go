@@ -35,6 +35,7 @@ func extractPremiumIndex(premium []models.BinancePremium, currency string) (valu
 func main() {
 	route := gin.Default()
 
+	route.Use(gin.Recovery())
 	route.GET("/", func(ctx *gin.Context) {
 		res, err := http.Get("https://fapi.binance.com/fapi/v1/premiumIndex")
 		if err != nil {
