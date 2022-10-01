@@ -28,13 +28,13 @@ func (h *BinanceHedge) GetPrice(currency string) (price float64) {
 	return
 }
 
-func (h *BinanceHedge) GetLeftMinutes(currency string) (minutes int) {
+func (h *BinanceHedge) GetLeftMinutes(currency string) (minutes float64) {
 	for _, i := range h.Index {
 		if strings.HasSuffix(i.Symbol, currency) {
 			nextFundingTime := time.Unix(0, int64(i.NextFundingTime)*int64(time.Millisecond))
 			now := time.Unix(0, int64(i.Time)*int64(time.Millisecond))
 
-			minutes = nextFundingTime.Sub(now)
+			minutes = nextFundingTime.Sub(now).Minutes()
 			break
 		}
 	}
