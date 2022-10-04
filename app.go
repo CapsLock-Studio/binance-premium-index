@@ -1,15 +1,16 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
+	"math"
 	"net/http"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/CapsLock-Studio/binance-premium-index/models"
 	"github.com/gin-gonic/gin"
+	"github.com/parnurzeal/gorequest"
 	"github.com/shopspring/decimal"
 )
 
@@ -36,15 +37,32 @@ func main() {
 	route := gin.Default()
 
 	route.GET("/", func(ctx *gin.Context) {
-		res, err := http.Get("https://fapi.binance.com/fapi/v1/premiumIndex")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer res.Body.Close()
+		binancePremium := make([]models.BinancePremium, 0)
+		ftxPremium := models.FTXFuture{}
 
-		target := make([]models.BinancePremium, 0)
-		decoder := json.NewDecoder(res.Body)
-		decoder.Decode(&target)
+		wg := &sync.WaitGroup{}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			gorequest.
+				New().
+				Get("https://fapi.binance.com/fapi/v1/premiumIndex").
+				EndStruct(&binancePremium)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			gorequest.
+				New().
+				Get("https://ftx.com/api/funding_rates").
+				EndStruct(&ftxPremium)
+		}()
+
+		wg.Wait()
 
 		currencies := []string{
 			"USDT",
@@ -53,7 +71,7 @@ func main() {
 
 		// mapping
 		mapping := make(map[string][]models.BinancePremium)
-		for _, v := range target {
+		for _, v := range binancePremium {
 
 			re := regexp.MustCompile("(" + strings.Join(currencies, "|") + ")$")
 
@@ -101,6 +119,45 @@ func main() {
 					MarkPriceGap:   markPriceGap,
 					Index:          v,
 					Direction:      rateUSDT.GreaterThan(rateBUSD),
+				}
+
+				for _, r := range ftxPremium.Result {
+					regexK := regexp.MustCompile("^1000")
+					symbol := regexK.ReplaceAllString(r.Future, "K")
+
+					regexPerp := regexp.MustCompile("-PERP")
+					symbol = regexPerp.ReplaceAllLiteralString(symbol, "")
+
+					regexUni := regexp.MustCompile("^UNISWAP$")
+					symbol = regexUni.ReplaceAllString(symbol, "UNI")
+
+					if symbol == i {
+						rate := decimal.NewFromFloat(r.Rate).Mul(decimal.NewFromInt(8))
+
+						crossUSDT, _ := rate.
+							Sub(rateUSDT).
+							Abs().
+							Float64()
+
+						crossBUSD, _ := rate.
+							Sub(rateBUSD).
+							Abs().
+							Float64()
+
+						crossRate := math.Max(crossBUSD, crossUSDT)
+
+						if crossRate == crossBUSD {
+							hedge.CrossDirection = rateBUSD.GreaterThan(rate)
+						}
+
+						if crossRate == crossUSDT {
+							hedge.CrossDirection = rateUSDT.GreaterThan(rate)
+						}
+
+						hedge.CorssFundingRateGap = crossRate
+
+						break
+					}
 				}
 
 				if fundinRateGap > 0 {

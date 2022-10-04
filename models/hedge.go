@@ -8,12 +8,14 @@ import (
 )
 
 type BinanceHedge struct {
-	Symbol         string           `json:"symbol"`
-	FundingRateGap float64          `json:"fundingRateGap"`
-	MarkPriceGap   float64          `json:"markPriceGap"`
-	ProfitForTimes int64            `json:"profitForTimes"`
-	Direction      bool             `json:"direction"`
-	Index          []BinancePremium `json:"index"`
+	Symbol              string           `json:"symbol"`
+	FundingRateGap      float64          `json:"fundingRateGap"`
+	CorssFundingRateGap float64          `json:"crossFundingRateGap"`
+	MarkPriceGap        float64          `json:"markPriceGap"`
+	ProfitForTimes      int64            `json:"profitForTimes"`
+	Direction           bool             `json:"direction"`
+	CrossDirection      bool             `json:"crossDirection"`
+	Index               []BinancePremium `json:"index"`
 }
 
 func (h *BinanceHedge) GetPrice(currency string) (price float64) {
