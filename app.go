@@ -132,7 +132,10 @@ func main() {
 					symbol = regexUni.ReplaceAllString(symbol, "UNI")
 
 					if symbol == i {
-						rate := decimal.NewFromFloat(r.Rate).Mul(decimal.NewFromInt(8))
+						rate := decimal.
+							NewFromFloat(r.Rate).
+							Mul(decimal.NewFromInt(8)).
+							Mul(decimal.NewFromInt(100))
 
 						crossUSDT, _ := rate.
 							Sub(rateUSDT).
@@ -147,11 +150,11 @@ func main() {
 						crossRate := math.Max(crossBUSD, crossUSDT)
 
 						if crossRate == crossBUSD {
-							hedge.CrossDirection = rateBUSD.GreaterThan(rate)
+							hedge.CrossDirection = rate.GreaterThan(rateBUSD)
 						}
 
 						if crossRate == crossUSDT {
-							hedge.CrossDirection = rateUSDT.GreaterThan(rate)
+							hedge.CrossDirection = rate.GreaterThan(rateUSDT)
 						}
 
 						hedge.CorssFundingRateGap = crossRate
