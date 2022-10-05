@@ -22,6 +22,18 @@ func (value SortBinanceHedge) Less(i, j int) bool {
 }
 func (value SortBinanceHedge) Swap(i, j int) { value[i], value[j] = value[j], value[i] }
 
+type SortCrossBinanceHedge []models.BinanceHedge
+
+func (value SortCrossBinanceHedge) Len() int { return len(value) }
+func (value SortCrossBinanceHedge) Less(i, j int) bool {
+	return value[i].CorssFundingRateGap > value[j].CorssFundingRateGap
+}
+func (value SortCrossBinanceHedge) Swap(i, j int) { value[i], value[j] = value[j], value[i] }
+
+type Request struct {
+	Cross bool `form:"cross"`
+}
+
 func extractPremiumIndex(premium []models.BinancePremium, currency string) (value *models.BinancePremium) {
 	for _, index := range premium {
 		if strings.HasSuffix(index.Symbol, currency) {
@@ -37,6 +49,11 @@ func main() {
 	route := gin.Default()
 
 	route.GET("/", func(ctx *gin.Context) {
+		var r Request
+		if err := ctx.Bind(&r); err != nil {
+			return
+		}
+
 		binancePremium := make([]models.BinancePremium, 0)
 		ftxPremium := models.FTXFuture{}
 
@@ -177,7 +194,11 @@ func main() {
 			}
 		}
 
-		sort.Sort(SortBinanceHedge(result))
+		if r.Cross {
+			sort.Sort(SortCrossBinanceHedge(result))
+		} else {
+			sort.Sort(SortBinanceHedge(result))
+		}
 
 		ctx.JSON(http.StatusOK, result)
 	})
