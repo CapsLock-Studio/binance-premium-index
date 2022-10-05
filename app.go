@@ -122,8 +122,8 @@ func main() {
 				}
 
 				for _, r := range ftxPremium.Result {
-					regexK := regexp.MustCompile("^1000")
-					symbol := regexK.ReplaceAllString(r.Future, "K")
+					regexK := regexp.MustCompile("^K")
+					symbol := regexK.ReplaceAllString(r.Future, "1000")
 
 					regexPerp := regexp.MustCompile("-PERP")
 					symbol = regexPerp.ReplaceAllLiteralString(symbol, "")
