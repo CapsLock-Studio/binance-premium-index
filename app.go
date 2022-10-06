@@ -138,6 +138,13 @@ func main() {
 					Direction:      rateUSDT.GreaterThan(rateBUSD),
 				}
 
+				hedge.FundingInterest, _ = decimal.
+					NewFromFloat(fundinRateGap).
+					Mul(decimal.NewFromInt(3)).
+					Mul(decimal.NewFromInt(365)).
+					Div(decimal.NewFromInt(2)).
+					Float64()
+
 				for _, r := range ftxPremium.Result {
 					regexK := regexp.MustCompile("^K")
 					symbol := regexK.ReplaceAllString(r.Future, "1000")
@@ -175,6 +182,12 @@ func main() {
 						}
 
 						hedge.CorssFundingRateGap = crossRate
+						hedge.CorssFundingInterest, _ = decimal.
+							NewFromFloat(crossRate).
+							Mul(decimal.NewFromInt(3)).
+							Mul(decimal.NewFromInt(365)).
+							Div(decimal.NewFromInt(2)).
+							Float64()
 
 						break
 					}
